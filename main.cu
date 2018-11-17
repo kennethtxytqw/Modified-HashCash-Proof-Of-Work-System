@@ -40,7 +40,7 @@ int main(int argc, char **argv)
     cerr << "Instantiation time: " << duration.count() << " seconds." << endl;
 
     auto generate_start = system_clock::now();
-    gen->generate();
+    gen->generateCudaDeviceSynchronize();
     duration = (system_clock::now() - generate_start);
     cerr << "Generation time: " << duration.count() << " seconds." << endl;
 

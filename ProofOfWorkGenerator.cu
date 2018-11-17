@@ -118,7 +118,25 @@ ProofOfWorkGenerator::~ProofOfWorkGenerator(void)
     cudaFree(this->found);
 }
 
-void ProofOfWorkGenerator::generate()
+void ProofOfWorkGenerator::generateCudaDeviceSynchronize()
+{
+    dim3 blockDim(this->blockDimX, this->blockDimY);
+    dim3 gridDim(this->gridDimX, this->gridDimY);
+
+    generateKernel<<<gridDim, blockDim>>>(this->templateX, this->nonce, this->digest, this->target, this->found);
+    cudaDeviceSynchronize();
+
+    if(*(this->found) > 0)
+    {
+        cerr << "Found " << this->getNonce() << endl;
+    } else 
+    {
+        cerr << "Failed\n";
+    }
+    check_cuda_errors();
+}
+
+void ProofOfWorkGenerator::generateBusyWait()
 {
     dim3 blockDim(this->blockDimX, this->blockDimY);
     dim3 gridDim(this->gridDimX, this->gridDimY);

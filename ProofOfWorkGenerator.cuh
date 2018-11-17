@@ -16,7 +16,8 @@ namespace ProofOfWork
             ProofOfWorkGenerator(const std::string prevDigest, const std::string id, const ulong target, unsigned blockDimX, unsigned blockDimY, unsigned gridDimX, unsigned gridDimY);
             ~ProofOfWorkGenerator();
 
-            void generate();
+            void generateCudaDeviceSynchronize();
+            void generateBusyWait();
 
             ulong getEpoch();
             ullong getNonce();
