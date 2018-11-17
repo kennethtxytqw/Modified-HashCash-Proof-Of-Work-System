@@ -1,1 +1,4 @@
 .vscode
+test.sh
+main.cu
+*.tar
