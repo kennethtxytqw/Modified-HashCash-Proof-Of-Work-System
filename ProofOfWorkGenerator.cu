@@ -58,7 +58,7 @@ __global__ void generateKernel(const uint8_t* templateX, ullong* nonce, uint8_t*
                 {
                     digest[j] = hash[j];
                 }
-                printf("%llu found %llu\n", tid, i);
+                // printf("%llu found %llu\n", tid, i);
                 return;
             }
         }
