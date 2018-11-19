@@ -9,6 +9,16 @@
 \usepackage{color}
 \usepackage{csvsimple}
 \usepackage{pgfplots}
+\usepackage{siunitx}
+\usepackage{tabulary}
+\pgfplotsset{
+    select coords between index/.style 2 args={
+        x filter/.code={
+            \ifnum\coordindex<#1\def\pgfmathresult{}\fi
+            \ifnum\coordindex>#2\def\pgfmathresult{}\fi
+        }
+    }
+}
 \definecolor{mygreen}{rgb}{0,0.6,0}
 \definecolor{mygray}{rgb}{0.5,0.5,0.5}
 \definecolor{mymauve}{rgb}{0.58,0,0.82}
@@ -59,7 +69,7 @@ Upon calling one of its \texttt{generate} function, \texttt{ProofOfWorkGenerator
 
 \begin{figure}
 \begin{lstlisting}
-__global__ void generateKernel(const uint8_t* templateX, ullong* nonce, uint8_t* digest, ulong target, bool* found)
+__global__ void generateKernel(const uint8_t* templateX, ullong* nonce, uint8_t* digest, ulong target, int* found)
 \end{lstlisting}
 \caption{\label{fig:generate-kernel} \texttt{generateKernel} function in \texttt{ProofOfWorkGenerator.cu}}
 \end{figure}
@@ -77,7 +87,7 @@ __global__ void generateKernel(const uint8_t* templateX, ullong* nonce, uint8_t*
 
 \item[{\texttt{target}}]The specified target, as described in the assignment.
 
-\item[{\texttt{found}}]A \texttt{cudaMallocManaged} created pointer to an unified memory to store a boolean which indicates true when a valid nonce is found. A Cuda's \texttt{atomicCAS} function is used to check and toggle this value to prevent synchronization issues between threads, as shown in Figure \ref{fig:update-nonce}. This way only one thread is able to modify the memory for \texttt{nonce} and \texttt{digest} in each execution.
+\item[{\texttt{found}}]A \texttt{cudaMallocManaged} created pointer to an unified memory to store a \texttt{int} (but used like a boolean because \texttt{atomicCAS} does not allow \texttt{bool}) which indicates true when a valid nonce is found. A Cuda's \texttt{atomicCAS} function is used to check and toggle this value to prevent synchronization issues between threads, as shown in Figure \ref{fig:update-nonce}. This way only one thread is able to modify the memory for \texttt{nonce} and \texttt{digest} in each execution.
 \end{description}
 
 Each thread will execute \texttt{generateKernel} in these steps:
@@ -128,22 +138,109 @@ Experiments to get measurement were done on the compute cluster machines(xgpd0) 
     \item[{\texttt{4.in}}] Digest: a6d569d489eca7f807e2edad9876473b918694ef68b5125585f5a9d667224033, $target = 2^{48}$
     \item[{\texttt{5.in}}] Same digest as \texttt{4.in}, $target = 2^{40}$
 \end{description}
+The grid configuration used is 64x1 and block configuration used are 1x1, 32x1, 64x1, 128x1, 256x1. Each of the input files will be run using all of these configurations except for 1x1 which I conducted experiments only for \texttt{1.in} and \texttt{2.in} as it takes too long to run. 
 
+\begin{figure}
 \begin{tikzpicture}
-\begin{axis}
-\addplot table [x={Num of Threads}, y={Avg Time Taken(s)}, col sep=comma, smooth] {xgpd.csv};
-\end{axis}
+\begin{semilogyaxis}[xlabel={Num of Threads}, ylabel={Avg Time Taken(log s)}]
+\addplot table [x={Num of Threads}, y={Avg Time Taken(s)}, select coords between index={0}{4}, col sep=comma, smooth] {jetson.csv};
+\end{semilogyaxis}
 \end{tikzpicture}
+\caption{\label{fig:jetson1} Time Taken to find valid nonce for \texttt{1.in} on the jetson machine.}
+\end{figure}
+
+\begin{figure}
+\begin{tikzpicture}
+\begin{semilogyaxis}[xlabel={Num of Threads}, ylabel={Avg Time Taken(log s)}]
+\addplot table [x={Num of Threads}, y={Avg Time Taken(s)}, select coords between index={5}{9}, col sep=comma, smooth] {jetson.csv};
+\end{semilogyaxis}
+\end{tikzpicture}
+\caption{\label{fig:jetson2} Time Taken to find valid nonce for \texttt{2.in} on the jetson machine.}
+\end{figure}
+
+\begin{figure}
+\begin{tikzpicture}
+\begin{semilogyaxis}[xlabel={Num of Threads}, ylabel={Avg Time Taken(log s)}]
+\addplot table [x={Num of Threads}, y={Avg Time Taken(s)}, select coords between index={0}{4}, col sep=comma, smooth] {xgpd.csv};
+\end{semilogyaxis}
+\end{tikzpicture}
+\caption{\label{fig:xgpd1} Time Taken to find valid nonce for \texttt{1.in} on the xgpd machine.}
+\end{figure}
+
+\begin{figure}
+\begin{tikzpicture}
+\begin{semilogyaxis}[xlabel={Num of Threads}, ylabel={Avg Time Taken(log s)}]
+\addplot table [x={Num of Threads}, y={Avg Time Taken(s)}, select coords between index={5}{9}, col sep=comma, smooth] {xgpd.csv};
+\end{semilogyaxis}
+\end{tikzpicture}
+\caption{\label{fig:xgpd2} Time Taken to find valid nonce for \texttt{2.in} on the xgpd machine.}
+\end{figure}
+
+\begin{figure}
+\begin{tikzpicture}
+\begin{semilogyaxis}[xlabel={Num of Threads}, ylabel={Avg Time Taken(log s)}]
+\addplot table [x={Num of Threads}, y={Avg Time Taken(s)}, select coords between index={10}{13}, col sep=comma, smooth] {xgpd.csv};
+\end{semilogyaxis}
+\end{tikzpicture}
+\caption{\label{fig:xgpd3} Time Taken to find valid nonce for \texttt{3.in} on the xgpd machine.}
+\end{figure}
+
+\begin{figure}
+\begin{tikzpicture}
+\begin{semilogyaxis}[xlabel={Num of Threads}, ylabel={Avg Time Taken(log s)}]
+\addplot table [x={Num of Threads}, y={Avg Time Taken(s)}, select coords between index={14}{17}, col sep=comma, smooth] {xgpd.csv};
+\end{semilogyaxis}
+\end{tikzpicture}
+\caption{\label{fig:xgpd4} Time Taken to find valid nonce for \texttt{4.in} on the xgpd machine.}
+\end{figure}
+
+\begin{figure}
+\begin{tikzpicture}
+\begin{semilogyaxis}[xlabel={Num of Threads}, ylabel={Avg Time Taken(log s)}]
+\addplot table [x={Num of Threads}, y={Avg Time Taken(s)}, select coords between index={18}{21}, col sep=comma, smooth] {xgpd.csv};
+\end{semilogyaxis}
+\end{tikzpicture}
+\caption{\label{fig:xgpd5} Time Taken to find valid nonce for \texttt{5.in} on the xgpd machine.}
+\end{figure}
 
 \begin{table}
-    \centering
-    \csvautotabular{xgpd.csv}
+    \begin{tabular}{|c|c|S[table-format=5.3,round-mode=places,round-precision=3]|S[table-format=5.3,round-mode=places,round-precision=3]|S[table-format=5.3,round-mode=places,round-precision=3]|}
+    \hline
+    \bfseries Input & \bfseries Num of Threads & \bfseries Avg Time Taken(s) & \bfseries Max Time Taken(s) & \bfseries Min Time Taken(s)
+    \csvreader[head to column names]{jetson.csv}{}
+    {\\\hline\csvcoli&\csvcolii&\csvcoliii&\csvcoliv&\csvcolv}\\\hline
+    \end{tabular}
+    \caption{\label{table:jetson} Measurements taken from experiments ran on jetson machine.}
+\end{table}
+
+\begin{table}
+    \begin{tabular}{|c|c|S[table-format=5.3,round-mode=places,round-precision=3]|S[table-format=5.3,round-mode=places,round-precision=3]|S[table-format=5.3,round-mode=places,round-precision=3]|}
+    \hline
+    \bfseries Input & \bfseries Num of Threads & \bfseries Avg Time Taken(s) & \bfseries Max Time Taken(s) & \bfseries Min Time Taken(s)
+    \csvreader[head to column names]{xgpd.csv}{}
+    {\\\hline\csvcoli&\csvcolii&\csvcoliii&\csvcoliv&\csvcolv}\\\hline
+    \end{tabular}
     \caption{\label{table:xgpd} Measurements taken from experiments ran on xgpd machine.}
 \end{table}
 
+\subsection{Observations}
+Generally, as number of threads used increases, we are able to reduce the time taken to find a valid nonce, as seen in Figure \ref{fig:jetson1}. The same trend can be observed in the xgpd machine as seen in Figure \ref{fig:xgpd1}.
+
+Additionally, results are much more unstable as less threads are used. From Table \ref{table:xgpd}, we can see that there is greater variance in the time taken by observing the difference between \emph{Max Time Taken(s)} and \emph{Min Time Taken(s)}, this shows that using different epoch across the different trials has a great effect, and thus one has to be careful when comparing such results. The extent of this effect can be seen in Figure \ref{fig:jetson2}, using 128 threads per block used has a larger \emph{Avg Time Taken(s)} compared to using 1, 32 or 64 threads. However, this anomaly is caused by a single trial out of the ten, which happen to have a valid nonce ranked higher in order of the threads' search range.
+
+
 \section{Modifications}
 \subsection{Using busy wait instead of \texttt{CudaDeviceSynchronize}}
-My initial design requires the CPU thread to wait for the termination of all threads via the use of \texxttt{CudaDeviceSynchronize}. I realize that this becomes counter-productive when I try to scale using more blocks and threads, see Figure \ref{fig:generateCudaDeviceSynchronize}. The \texttt{__host__} code will have to wait for more threads to terminate as it scales resulting in time wasted before the program outputs the result. I circumvent this by using a busy wait strategy in the \texttt{generateBusyWait}, see Figure \ref{fig:generateBusyWait}. The result is an average of 10-15% speedup in large enough grid and block configuration. One might think that the speedup shouldn't have been that significant, as most threads should immediatelly terminate when it \texttt{return} after reading \texttt{found} as \texttt{true}. However, when using big enough configuration, there is a lot of context switching involved when each new block runs, I suspect this is the reason for the significant speedup. Until Cuda develops a better way to terminate all running threads and/or stop them before they get run, this workaround seems to be the only way to avoid waiting for complete termination of the threads. However, resources will still be used for these threads' intialization, one can imagine a worse situation if the kernel function used requires more registers, or if each thread intialization involves more memory copying work.
+My initial design requires the CPU thread to wait for the termination of all threads via the use of \texttt{CudaDeviceSynchronize}. I realize that this becomes counter-productive when I try to scale using more blocks and threads, see Figure \ref{fig:generateCudaDeviceSynchronize}. The \texttt{\_\_host\_\_} code will have to wait for more threads to terminate as it scales resulting in time wasted before the program outputs the result. I circumvent this by using a busy wait strategy in the \texttt{generateBusyWait}, see Figure \ref{fig:generateBusyWait}. The result is an average of $10-15\%$ speedup in large enough grid and block configuration. One might think that the speedup shouldn't have been that significant, as most threads should immediately terminate when it \texttt{return} after reading \texttt{found} as \texttt{true}. However, when using big enough configuration, there is a lot of context switching involved when each new block runs, I suspect this is the reason for the significant speedup. Until Cuda develops a better way to terminate all running threads and/or stop them before they get run, this workaround seems to be the only way to avoid waiting for complete termination of the threads. However, resources will still be used for these threads' initialization, one can imagine a worse situation if the kernel function used requires more registers, or if each thread initialization involves more memory copying work.
+
+\subsection{Using thread id to calculate its search range}
+I made a mistake of having the CPU thread calculate the range each thread has to search within and then sending those values to each of these threads. On hindsight, that was a simple solution as I do not have to deal with the calculation within the GPU threads. This was a huge mistake. Not only did that code waste time computing each of the threads' work, time was wasted communicating those values to the threads too. Not to mention the amount of memory being copied from device to device then to each of the thread's memory stack.
+
+\subsection{Using randomizer to achieve stable results}
+In an attempt to achieve a better expected performance, I used \texttt{cuRAND} a cuda library that allows usage of randomizer in the Cuda kernel. Instead of iteratively trying every value in its search range, a thread would randomly pick a value from its search range to try as depicted in Figure \ref{fig:generateKernelWithRand}. Using this function, did result in slightly better expected result with lower variance but due to it picking a random value to try, it could pick the same value and thus not try all the value in its search range, causing the program to be have a less likelihood to find a valid nonce. In order to avoid this, one can increase the number of times to sample and try, but this is not within the scope of this paper.
+
+\section{Discussion}
+It seems OOP design does not suit the Cuda API that well (yet...) due to the need to use memory modifiers/qualifiers such as \texttt{\_\_device\_\_} and \texttt{\_\_global\_\_}. I was able to work around by dynamically creating memory using \texttt{CudaMallocManaged}, but this would have been unnecessary if \texttt{\_\_managed\_\_} is used instead, which in this assignment one could have as all sizes are determined. 
 
 \begin{figure}
 \begin{lstlisting}
@@ -182,6 +279,18 @@ void ProofOfWorkGenerator::generateBusyWait()
 }
 \end{lstlisting}
 \caption{\label{fig:generateBusyWait} \texttt{generateBusyWait} function in texttt{ProofOfWorkGenerator.cu}}
+\end{figure}
+
+\begin{figure}
+\begin{lstlisting}
+double randDouble = curand_uniform_double(my_curandstate);
+randDouble *= (stop - start+0.999999);
+randDouble += start;
+ullong randUllong = (ullong)truncf(randDouble);
+
+ullong_to_uint8_big_endian(candidateX + len, randUllong);
+\end{lstlisting}
+\caption{\label{fig:generateKernelWithRand} Main difference between \texttt{generateKernelWithRand} function and \texttt{generateKernel} function in \texttt{ProofOfWorkGenerator.cu}}
 \end{figure}
 
 \end{document}
