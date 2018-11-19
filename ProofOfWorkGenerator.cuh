@@ -13,11 +13,12 @@ namespace ProofOfWork
     class ProofOfWorkGenerator
     {
         public:
-            ProofOfWorkGenerator(const std::string prevDigest, const std::string id, const ulong target, unsigned blockDimX, unsigned blockDimY, unsigned gridDimX, unsigned gridDimY);
+            ProofOfWorkGenerator(const std::string prevDigest, const std::string id, const ulong target, unsigned gridDimX, unsigned gridDimY, unsigned blockDimX, unsigned blockDimY);
             ~ProofOfWorkGenerator();
 
             void generateCudaDeviceSynchronize();
             void generateBusyWait();
+            void generateBusyWaitWithRand();
 
             ulong getEpoch();
             ullong getNonce();
@@ -35,12 +36,13 @@ namespace ProofOfWork
             ullong* nonce; // little endian
             int* found;
 
-            unsigned blockDimX;
-            unsigned blockDimY;
             unsigned gridDimX;
             unsigned gridDimY;
 
-            uint8_t* digest;
+            unsigned blockDimX;
+            unsigned blockDimY;
+
+            uint8_t* digest; // little endian
             void init();
     };
 }

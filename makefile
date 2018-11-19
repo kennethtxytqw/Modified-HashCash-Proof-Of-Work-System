@@ -1,5 +1,5 @@
 CC=nvcc
-CFLAGS= -std=c++11 -I. -arch=sm_30
+CFLAGS= -std=c++11 -I. -arch=sm_52
 prog_name= ProofOfWorkGenerator
 
 all: $(prog_name)
@@ -21,15 +21,25 @@ $(prog_name): ProofOfWorkGenerator.o hash.o main.o utils.o
 	$(CC) $(CFLAGS) $^ -o $@
 
 benchmark: $(prog_name)
-	mkdir -p outputs/
-	./$(prog_name) inputs/1.in 1 1 1 1 1> outputs/1.out 2> outputs/1.err
-	./$(prog_name) inputs/2.in 1 1 1 1 1> outputs/2.out 2> outputs/2.err
-	./$(prog_name) inputs/3.in 1 1 1 1 1> outputs/3.out 2> outputs/3.err
+	mkdir -p outputs/ outputs/sp/
+	@for expnum in 1 2 3 4 5 ; do \
+		for threadnum in 256 128 64 32 ; do \
+			for timeth in 1 2 3 4 5 6 7 8 9 10; do \
+				./$(prog_name) inputs/$$expnum.in 64 1 $$threadnum 1 1> outputs/sp/$$expnum-$$threadnum.out$$timeth 2> outputs/sp/$$expnum-$$threadnum.err$$timeth ; \
+			done \
+		done \
+	done
 
-	
-	./$(prog_name) inputs/4.in 1 1 1 1 1> outputs/4.out 2> outputs/4.err
-	./$(prog_name) inputs/5.in 1 1 1 1 1> outputs/5.out 2> outputs/5.err
+	@for expnum in 1 2 ; do \
+		for threadnum in 1 ; do \
+			for timeth in 1 2 3 4 5 6 7 8 9 10; do \
+				./$(prog_name) inputs/$$expnum.in 64 1 $$threadnum 1 1> outputs/sp/$$expnum-$$threadnum.out$$timeth 2> outputs/sp/$$expnum-$$threadnum.err$$timeth ; \
+			done \
+		done \
+	done
+
+	python3 collate.py outputs/sp/
 
 clean:
-	rm -rf $(prog_name) ProofOfWorkGenerator.o hash.o main.o utils.o outputs/
+	rm -rf $(prog_name) ProofOfWorkGenerator.o hash.o main.o utils.o
 

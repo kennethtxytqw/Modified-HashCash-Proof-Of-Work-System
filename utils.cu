@@ -59,7 +59,7 @@ void ascii_str_to_uint8_little_endian(uint8_t buf[], const std::string &str)
     }
 }
 
-std::string uint8_to_hexstring(uint8_t arr[], const int len)
+std::string uint8_little_endian_to_hexstring(uint8_t arr[], const int len)
 {
     std::string hexstring;
     for(unsigned i = 0; i < len; i++)
